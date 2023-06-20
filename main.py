@@ -2,6 +2,7 @@
 from datetime import date, datetime, timedelta
 import bisect
 import json
+import logging
 import os
 import subprocess
 import threading
@@ -21,12 +22,21 @@ import screen_brightness_control as sbc
 load_dotenv()
 API_KEY = os.getenv('IPGEOLOCATION.IO_API_KEY')
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    filename='logs.log'
+)
+
+console_handler = logging.StreamHandler()
+logging.getLogger().addHandler(console_handler)
 
 def open_file(path) -> None:
     if os.path.exists(path):
         os.startfile(path)
     else:
-        print(f'{path} does not exist.')
+        logging.warning(f'{path} does not exist.')
 
 
 class Brightess_Ajuster:
@@ -115,15 +125,13 @@ class Brightess_Ajuster:
         if index > 0:
             latest_time_passed = sorted_times[index-1]
 
-        log_time = datetime.strftime(datetime.now(), "%H:%M:%S")
-
         if latest_time_passed is not None:
-            print(f'[{log_time}] The latest time that has already passed is {latest_time_passed}.')
-            print(f'Brightness to: {self.brightness_spans[latest_time_passed]}')
+            logging.info(f'The latest time that has already passed is {latest_time_passed}.')
+            logging.info(f'Brightness to: {self.brightness_spans[latest_time_passed]}')
             sbc.fade_brightness(self.brightness_spans[latest_time_passed], increment=1)
         else:
-            print(f'[{log_time}] None of the times in the dictionary have already passed.')
-            print(f'Brightness to: {self.min_brightness}')
+            logging.info('None of the times in the dictionary have already passed.')
+            logging.info(f'Brightness to: {self.min_brightness}')
             sbc.fade_brightness(self.min_brightness, increment=1)
 
     def check_date_accuracy(self) -> None:
@@ -136,7 +144,7 @@ class Brightess_Ajuster:
             self.get_astronomy()
             self.brightness_spans = self.brightness_spans_calculator()
             self.today = date.today()
-            print(f'Today is a new day: {self.today}')
+            logging.info(f'Today is a new day: {self.today}')
 
     def get_brightess_ajuster_settings(self) -> dict:
         """
@@ -166,7 +174,7 @@ class Tray_Icon:
         self.update_title()
 
     def exit(self):
-        print('Exit clicked!')
+        logging.debug('Exit clicked!')
         self.running = False
         self.icon.stop()
 
@@ -200,7 +208,7 @@ while tray.running:
     try:
         schedule.run_pending()
     except Exception as e:
-        print(e)
+        logging.error(e)
 
 # Save the brightess ajuster settings
 with open('save.json', 'w') as f:
