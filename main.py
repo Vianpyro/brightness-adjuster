@@ -32,6 +32,10 @@ logging.basicConfig(
 console_handler = logging.StreamHandler()
 logging.getLogger().addHandler(console_handler)
 
+for name in logging.root.manager.loggerDict:
+    if name.startswith('screen_brightness_control'):
+        logging.getLogger(name).disabled = True
+
 def open_file(path) -> None:
     if os.path.exists(path):
         os.startfile(path)
