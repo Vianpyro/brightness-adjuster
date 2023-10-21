@@ -6,6 +6,7 @@ import logging
 import os
 import subprocess
 import threading
+import time
 
 # Install the required libraries
 subprocess.Popen('pip3 install -r requirements.txt')
@@ -213,6 +214,8 @@ while tray.running:
         schedule.run_pending()
     except Exception as e:
         logging.error(e)
+    
+    time.sleep(30)
 
 # Save the brightess ajuster settings
 with open('save.json', 'w') as f:
