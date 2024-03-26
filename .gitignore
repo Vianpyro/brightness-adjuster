@@ -1,5 +1,5 @@
 # Save file
-save.json
+*.json
 
 # Logs
 *.logs
