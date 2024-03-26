@@ -8,10 +8,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: read
-      statuses: read
+    permissions: read-all
 
     steps:
       - name: Checkout code
