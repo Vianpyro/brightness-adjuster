@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+from dotenv import load_dotenv
 
 import modules.brightness_spans as bs
 import modules.get_astronomy as ga
 import modules.adjust_brightness as ab
-from dotenv import load_dotenv
 
 
 def main():

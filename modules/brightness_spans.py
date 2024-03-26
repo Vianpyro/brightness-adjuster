@@ -12,7 +12,8 @@ def validate_brightness_values(min_brightness, max_brightness) -> None:
         max_brightness (int): Maximum brightness value.
 
     Raises:
-        ValueError: If the brightness values are not within the valid range or if min_brightness >= max_brightness.
+        ValueError: If the brightness values are not within the valid range
+            or if min_brightness >= max_brightness.
     """
     if min_brightness < 0 or max_brightness > 100:
         raise ValueError("Brightness values must be between 0 and 100")
@@ -57,7 +58,7 @@ def calculate_brightness(
     Returns:
         dict: A dictionary mapping time (in 24-hour format) to brightness level.
     """
-    spans = dict()
+    spans = {}
 
     for i in range((max_brightness - min_brightness) * 2 + 1):
         delta = timedelta(minutes=spans_duration * i)
