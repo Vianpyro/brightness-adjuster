@@ -1,4 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+Module: brightness_controller
+
+This module provides functions for controlling screen brightness based on predefined brightness spans.
+
+Functions:
+    find_last_passed_hour(spans):
+        Finds the last passed hour based on the current time and brightness spans.
+    update_brightness(spans, current_time):
+        Updates the screen brightness based on the provided brightness span for the current time.
+"""
+
 import bisect
 from datetime import datetime
 

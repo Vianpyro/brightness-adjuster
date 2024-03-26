@@ -1,3 +1,20 @@
+"""
+Module: brightness_calculator
+
+This module provides functions for calculating brightness levels
+based on sunrise, solar noon, and specified brightness range.
+
+Functions:
+    validate_brightness_values(min_brightness, max_brightness):
+        Validates the provided minimum and maximum brightness values.
+    calculate_brightness_duration(sunrise, solar_noon, spans_count):
+        Calculates the duration of each brightness span.
+    calculate_brightness(min_brightness, max_brightness, spans_duration, sunrise):
+        Calculates the brightness level for each time span between sunrise and solar noon.
+    brightness_spans_calculator(sunrise, solar_noon, min_brightness, max_brightness):
+        Calculates brightness spans based on sunrise, solar noon, and brightness range.
+"""
+
 from datetime import datetime, timedelta
 
 TIME_FORMAT = "%H:%M"

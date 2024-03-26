@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Module: astronomy_data_fetcher
+
+This module provides functions for retrieving astronomy data using an API key.
+
+Functions:
+    get_astronomy(api_key):
+        Retrieves astronomy data using the provided API key.
+"""
+
 import requests
 
 
