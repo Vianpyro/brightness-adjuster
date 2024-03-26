@@ -5,6 +5,16 @@ TIME_FORMAT = "%H:%M"
 
 
 def validate_brightness_values(min_brightness, max_brightness) -> None:
+    """
+    Validates the provided minimum and maximum brightness values.
+
+    Args:
+        min_brightness (int): Minimum brightness value.
+        max_brightness (int): Maximum brightness value.
+
+    Raises:
+        ValueError: If the brightness values are not within the valid range or if min_brightness >= max_brightness.
+    """
     if min_brightness < 0 or max_brightness > 100:
         raise ValueError("Brightness values must be between 0 and 100")
 
@@ -13,6 +23,17 @@ def validate_brightness_values(min_brightness, max_brightness) -> None:
 
 
 def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
+    """
+    Calculates the duration of each brightness span.
+
+    Args:
+        sunrise (str): The time of sunrise in 24-hour format (HH:MM).
+        solar_noon (str): The time of solar noon in 24-hour format (HH:MM).
+        spans_count (int): Number of brightness spans.
+
+    Returns:
+        int: Duration of each brightness span in minutes.
+    """
     noon_time = datetime.strptime(solar_noon, TIME_FORMAT)
     sunrise_time = datetime.strptime(sunrise, TIME_FORMAT)
 
@@ -25,6 +46,18 @@ def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
 def calculate_brightness(
         min_brightness, max_brightness, spans_duration, sunrise
     ) -> dict:
+    """
+    Calculates the brightness level for each time span between sunrise and solar noon.
+
+    Args:
+        min_brightness (int): Minimum brightness value.
+        max_brightness (int): Maximum brightness value.
+        spans_duration (int): Duration of each brightness span in minutes.
+        sunrise (str): The time of sunrise in 24-hour format (HH:MM).
+
+    Returns:
+        dict: A dictionary mapping time (in 24-hour format) to brightness level.
+    """
     spans = dict()
 
     for i in range((max_brightness - min_brightness) * 2 + 1):
@@ -42,6 +75,18 @@ def calculate_brightness(
 def brightness_spans_calculator(
         sunrise, solar_noon, min_brightness, max_brightness
     ) -> dict:
+    """
+    Calculates brightness spans based on sunrise, solar noon, and brightness range.
+
+    Args:
+        sunrise (str): The time of sunrise in 24-hour format (HH:MM).
+        solar_noon (str): The time of solar noon in 24-hour format (HH:MM).
+        min_brightness (int): Minimum brightness value.
+        max_brightness (int): Maximum brightness value.
+
+    Returns:
+        dict: A dictionary mapping time (in 24-hour format) to brightness level.
+    """
     validate_brightness_values(min_brightness, max_brightness)
 
     spans_count = max_brightness - min_brightness
