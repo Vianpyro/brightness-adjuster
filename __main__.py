@@ -13,6 +13,10 @@ API_KEY = os.getenv("API_KEY")
 
 if __name__ == "__main__":
     astronomy = ga.get_astronomy(API_KEY)
-    spans = bs.brightness_spans_calculator(astronomy["sunrise"], astronomy["solar_noon"], 0, 100)
+
+    sunrise = astronomy["sunrise"]
+    noon = astronomy["sunset"]
+
+    spans = bs.brightness_spans_calculator(sunrise, noon, 0, 100)
 
     ab.update_brightness(spans, ab.find_last_passed_hour(spans))
