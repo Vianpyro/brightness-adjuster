@@ -2,7 +2,7 @@
 """
 Module: brightness_controller
 
-This module provides functions for controlling screen brightness based on predefined brightness spans.
+This module provides functions for controlling screen brightness based on predefined spans.
 
 Functions:
     find_last_passed_hour(spans):

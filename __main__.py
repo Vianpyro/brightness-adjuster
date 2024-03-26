@@ -2,7 +2,8 @@
 """
 Module: __main__
 
-This module serves as the entry point for calculating and adjusting brightness based on sunrise and sunset times.
+This module serves as the entry point for calculating and adjusting brightness based on sunrise and
+    sunset times.
 
 Functions:
     main():
@@ -10,6 +11,7 @@ Functions:
 """
 
 import os
+import time
 from dotenv import load_dotenv
 
 import modules.astronomy_data_fetcher as adf
@@ -32,7 +34,9 @@ def main():
 
     spans = bca.brightness_spans_calculator(sunrise, noon, 0, 100)
 
-    bco.update_brightness(spans, bco.find_last_passed_hour(spans))
+    while True:
+        bco.update_brightness(spans, bco.find_last_passed_hour(spans))
+        time.sleep(60 * 3)
 
 
 if __name__ == "__main__":
