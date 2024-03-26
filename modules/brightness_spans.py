@@ -22,7 +22,9 @@ def validate_brightness_values(min_brightness, max_brightness) -> None:
         raise ValueError("Min brightness must be less than max brightness")
 
 
-def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
+def calculate_brightness_duration(
+    sunrise, solar_noon, spans_count
+) -> int:
     """
     Calculates the duration of each brightness span.
 
@@ -44,8 +46,8 @@ def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
 
 
 def calculate_brightness(
-        min_brightness, max_brightness, spans_duration, sunrise
-    ) -> dict:
+    min_brightness, max_brightness, spans_duration, sunrise
+) -> dict:
     """
     Calculates the brightness level for each time span between sunrise and solar noon.
 
@@ -73,8 +75,8 @@ def calculate_brightness(
 
 
 def brightness_spans_calculator(
-        sunrise, solar_noon, min_brightness, max_brightness
-    ) -> dict:
+    sunrise, solar_noon, min_brightness, max_brightness
+) -> dict:
     """
     Calculates brightness spans based on sunrise, solar noon, and brightness range.
 
