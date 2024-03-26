@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-
 TIME_FORMAT = "%H:%M"
 
 
@@ -38,9 +37,9 @@ def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
     sunrise_time = datetime.strptime(sunrise, TIME_FORMAT)
 
     spans_duration = noon_time - sunrise_time
-    spans_duration = spans_duration.total_seconds() / 60 / spans_count
+    spans_duration_minutes = int(spans_duration.total_seconds() / 60 / spans_count)
 
-    return spans_duration
+    return spans_duration_minutes
 
 
 def calculate_brightness(

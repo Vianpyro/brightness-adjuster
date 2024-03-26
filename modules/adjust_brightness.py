@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
 import bisect
+from datetime import datetime
+
 import screen_brightness_control as sbc
 
 
