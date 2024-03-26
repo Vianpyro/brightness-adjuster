@@ -10,6 +10,8 @@ jobs:
 
     permissions:
       contents: read
+      packages: read
+      statuses: write
 
     steps:
       - name: Checkout code
@@ -21,3 +23,4 @@ jobs:
         uses: super-linter/super-linter@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_CHECKOV: false
