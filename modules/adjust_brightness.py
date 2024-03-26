@@ -14,4 +14,4 @@ def find_last_passed_hour(spans: dict) -> str:
 def update_brightness(spans: dict, current_time: str) -> None:
     brightness = spans[current_time]
 
-    sbc.set_brightness(brightness)
+    sbc.fade_brightness(brightness, increment=1)
