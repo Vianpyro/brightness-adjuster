@@ -30,7 +30,7 @@ def main():
     astronomy = adf.get_astronomy(API_KEY)
 
     sunrise = astronomy["sunrise"]
-    noon = astronomy["sunset"]
+    noon = astronomy["solar_noon"]
 
     spans = bca.brightness_spans_calculator(sunrise, noon, 0, 100)
 
