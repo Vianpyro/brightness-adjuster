@@ -39,23 +39,23 @@ def validate_brightness_values(min_brightness, max_brightness) -> None:
         raise ValueError("Min brightness must be less than max brightness")
 
 
-def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> int:
+def calculate_brightness_duration(sunrise, solar_noon, spans_count) -> float:
     """
     Calculates the duration of each brightness span.
 
     Args:
         sunrise (str): The time of sunrise in 24-hour format (HH:MM).
         solar_noon (str): The time of solar noon in 24-hour format (HH:MM).
-        spans_count (int): Number of brightness spans.
+        spans_count (float): Number of brightness spans.
 
     Returns:
-        int: Duration of each brightness span in minutes.
+        float: Duration of each brightness span in minutes.
     """
     noon_time = datetime.strptime(solar_noon, TIME_FORMAT)
     sunrise_time = datetime.strptime(sunrise, TIME_FORMAT)
 
     spans_duration = noon_time - sunrise_time
-    spans_duration_minutes = int(spans_duration.total_seconds() / 60 / spans_count)
+    spans_duration_minutes = float(spans_duration.total_seconds() / 60 / spans_count)
 
     return spans_duration_minutes
 
