@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  workflows: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -99,13 +100,14 @@ jobs:
         echo "name=$NAME" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Rename binary (clean artifacts)
+    - name: Rename binary
       shell: bash
       run: |
+        BIN=$(ls target/release | grep -v '\.' | head -n 1)
         if [ "${{ runner.os }}" = "Windows" ]; then
-          mv target/release/${{ steps.pkg.outputs.name }}.exe target/release/${{ steps.pkg.outputs.name }}-windows.exe
+          mv target/release/$BIN target/release/${BIN}-windows.exe
         else
-          mv target/release/${{ steps.pkg.outputs.name }} target/release/${{ steps.pkg.outputs.name }}-linux
+          mv target/release/$BIN target/release/${BIN}-linux
         fi
 
     - name: Upload artifact
