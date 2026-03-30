@@ -2,6 +2,7 @@
 
 mod brightness;
 mod config;
+mod curve;
 mod ui;
 
 use anyhow::Result;
@@ -40,8 +41,8 @@ fn main() -> Result<()> {
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([420.0, 400.0])
-            .with_resizable(false),
+            .with_inner_size([480.0, 640.0])
+            .with_resizable(true),
         ..Default::default()
     };
 

@@ -5,23 +5,26 @@ use std::path::PathBuf;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 
+use crate::curve::{BrightnessCurve, MonitorOverride};
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub api_key: String,
-    pub min_brightness: u32,
-    pub max_brightness: u32,
     pub update_interval_secs: u64,
     pub start_on_startup: bool,
+    pub global_curve: BrightnessCurve,
+    pub monitors: Vec<MonitorOverride>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             api_key: String::new(),
-            min_brightness: 0,
-            max_brightness: 100,
             update_interval_secs: 180,
             start_on_startup: true,
+            global_curve: BrightnessCurve::default(),
+            monitors: Vec::new(),
         }
     }
 }
@@ -35,8 +38,15 @@ pub struct SharedState {
 
     pub current_brightness: AtomicU32,
 
+    pub current_elevation: RwLock<f64>,
+
+    pub current_day_progress: RwLock<f64>,
+
     pub sunrise_str: RwLock<String>,
     pub noon_str: RwLock<String>,
+    pub sunset_str: RwLock<String>,
+
+    pub detected_monitors: RwLock<Vec<String>>,
 }
 
 impl SharedState {
@@ -46,8 +56,12 @@ impl SharedState {
             needs_refetch: AtomicBool::new(true),
             status: RwLock::new("Starting...".into()),
             current_brightness: AtomicU32::new(50),
+            current_elevation: RwLock::new(0.0),
+            current_day_progress: RwLock::new(0.0),
             sunrise_str: RwLock::new(String::new()),
             noon_str: RwLock::new(String::new()),
+            sunset_str: RwLock::new(String::new()),
+            detected_monitors: RwLock::new(Vec::new()),
         }
     }
 

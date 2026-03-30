@@ -152,7 +152,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.pkg.outputs.version }}
-        name: ${{ steps.pkg.outputs.name }} v${{ steps.pkg.outputs.version }}
+        name: Version ${{ steps.pkg.outputs.version }}
         files: artifacts/**/*
         generate_release_notes: true
       env:
