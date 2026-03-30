@@ -3,12 +3,9 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 permissions:
   contents: write
-  workflows: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -65,6 +62,8 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - uses: dtolnay/rust-toolchain@stable
+
     - uses: actions/cache@v4
       with:
         path: |
@@ -72,9 +71,9 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: build-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: build-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: GTK dependencies (Linux)
+    - name: GTK deps (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
@@ -87,33 +86,33 @@ jobs:
           libssl-dev \
           libwayland-dev
 
-    - name: Build (release)
+    - name: Build
       run: cargo build --release --verbose
 
     - name: Get package info
       id: pkg
       shell: bash
       run: |
-        META=$(cargo metadata --no-deps --format-version 1)
-        NAME=$(echo "$META" | grep '"name"' | head -1 | cut -d '"' -f4)
-        VERSION=$(echo "$META" | grep '"version"' | head -1 | cut -d '"' -f4)
+        VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+        NAME=$(grep '^name' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
         echo "name=$NAME" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Rename binary
       shell: bash
       run: |
-        BIN=$(ls target/release | grep -v '\.' | head -n 1)
         if [ "${{ runner.os }}" = "Windows" ]; then
-          mv target/release/$BIN target/release/${BIN}-windows.exe
+          mv target/release/${{ steps.pkg.outputs.name }}.exe \
+             target/release/${{ steps.pkg.outputs.name }}-windows.exe
         else
-          mv target/release/$BIN target/release/${BIN}-linux
+          mv target/release/${{ steps.pkg.outputs.name }} \
+             target/release/${{ steps.pkg.outputs.name }}-linux
         fi
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: binaries-${{ runner.os }}
+        name: bin-${{ runner.os }}
         path: target/release/${{ steps.pkg.outputs.name }}-*
 
   release:
@@ -123,42 +122,38 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Get package info
+    - name: Get version
       id: pkg
       run: |
-        META=$(cargo metadata --no-deps --format-version 1)
-        NAME=$(echo "$META" | grep '"name"' | head -1 | cut -d '"' -f4)
-        VERSION=$(echo "$META" | grep '"version"' | head -1 | cut -d '"' -f4)
+        VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+        NAME=$(grep '^name' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
         echo "name=$NAME" >> $GITHUB_OUTPUT
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-
-    - name: Check if tag exists
-      id: tag
+    - name: Check if release exists
+      id: check
       run: |
-        git fetch --tags
-        if git rev-parse "v${{ steps.pkg.outputs.version }}" >/dev/null 2>&1; then
+        if gh release view v${{ steps.pkg.outputs.version }} >/dev/null 2>&1; then
           echo "exists=true" >> $GITHUB_OUTPUT
         else
           echo "exists=false" >> $GITHUB_OUTPUT
         fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create tag
-      if: steps.tag.outputs.exists == 'false'
-      run: |
-        git tag v${{ steps.pkg.outputs.version }}
-        git push origin v${{ steps.pkg.outputs.version }}
+    - name: Download artifacts
+      if: steps.check.outputs.exists == 'false'
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
-    - name: Create Release
-      if: steps.tag.outputs.exists == 'false'
+    - name: Create release
+      if: steps.check.outputs.exists == 'false'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.pkg.outputs.version }}
         name: ${{ steps.pkg.outputs.name }} v${{ steps.pkg.outputs.version }}
         files: artifacts/**/*
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
