@@ -20,11 +20,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: GTK dependencies for Rust ATK bindings
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y libpango1.0-dev libglib2.0-dev
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          pkg-config \
+          libgtk-3-dev \
+          libappindicator3-dev \
+          libxdo-dev \
+          libssl-dev \
+          libwayland-dev \
 
     - name: Build
       run: cargo build --verbose
