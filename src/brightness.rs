@@ -69,10 +69,8 @@ fn brightness_at(spans: &BrightnessSpans, now: NaiveTime) -> u32 {
 }
 
 fn set_all_displays(target: u32) {
-    for result in brightness_devices() {
-        if let Ok(dev) = result {
-            let _ = dev.set(target);
-        }
+    for dev in brightness_devices().flatten() {
+        let _ = dev.set(target);
     }
 }
 

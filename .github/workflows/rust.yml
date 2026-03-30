@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
 
 jobs:
   build:
@@ -18,9 +22,21 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
-    - name: GTK dependencies for Rust ATK bindings
+    - name: Install Rust components
+      run: rustup component add rustfmt clippy
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: GTK dependencies (Linux)
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
@@ -31,10 +47,78 @@ jobs:
           libappindicator3-dev \
           libxdo-dev \
           libssl-dev \
-          libwayland-dev \
+          libwayland-dev
 
-    - name: Build
-      run: cargo build --verbose
+    - name: Run fmt check
+      run: cargo fmt -- --check
+
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: Build (release)
+      run: cargo build --release --verbose
 
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all-features --release --verbose
+
+    - name: Get package info
+      id: pkg
+      shell: bash
+      run: |
+        META=$(cargo metadata --no-deps --format-version 1)
+        NAME=$(echo "$META" | grep '"name"' | head -1 | cut -d '"' -f4)
+        VERSION=$(echo "$META" | grep '"version"' | head -1 | cut -d '"' -f4)
+        echo "name=$NAME" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.pkg.outputs.name }}-${{ runner.os }}
+        path: target/release/${{ steps.pkg.outputs.name }}*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Get package info
+      id: pkg
+      run: |
+        META=$(cargo metadata --no-deps --format-version 1)
+        NAME=$(echo "$META" | grep '"name"' | head -1 | cut -d '"' -f4)
+        VERSION=$(echo "$META" | grep '"version"' | head -1 | cut -d '"' -f4)
+        echo "name=$NAME" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Check if tag exists
+      id: tag
+      run: |
+        git fetch --tags
+        if git rev-parse "v${{ steps.pkg.outputs.version }}" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create tag
+      if: steps.tag.outputs.exists == 'false'
+      run: |
+        git tag v${{ steps.pkg.outputs.version }}
+        git push origin v${{ steps.pkg.outputs.version }}
+
+    - name: Create Release
+      if: steps.tag.outputs.exists == 'false'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.pkg.outputs.version }}
+        files: artifacts/**/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
