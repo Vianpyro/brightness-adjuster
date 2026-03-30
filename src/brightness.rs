@@ -96,13 +96,13 @@ pub fn run_loop(state: Arc<SharedState>) {
         let config = state.config.read().unwrap().clone();
 
         if config.api_key.is_empty() {
-            state.set_status("Waiting for API key…");
+            state.set_status("Waiting for API key...");
             thread::sleep(Duration::from_secs(3));
             continue;
         }
 
         if state.needs_refetch.swap(false, Ordering::Relaxed) || spans.is_none() {
-            state.set_status("Fetching astronomy data…");
+            state.set_status("Fetching astronomy data...");
 
             match fetch_astronomy(&config.api_key) {
                 Ok(astro) => {

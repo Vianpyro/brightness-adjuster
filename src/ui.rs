@@ -105,7 +105,7 @@ impl eframe::App for SettingsApp {
         }
 
         egui::CentralPanel::default().show_inside(ui, |ui| {
-            ui.heading("☀  Sunrise Brightness");
+            ui.heading("Sunrise Brightness");
             ui.add_space(6.0);
 
             egui::Grid::new("settings")
@@ -121,7 +121,7 @@ impl eframe::App for SettingsApp {
                                 .desired_width(220.0),
                         );
                         if ui
-                            .button(if self.show_api_key { "🙈" } else { "👁" })
+                            .button(if self.show_api_key { "Hide" } else { "Show" })
                             .clicked()
                         {
                             self.show_api_key = !self.show_api_key;
@@ -156,13 +156,13 @@ impl eframe::App for SettingsApp {
             if self.min_brightness >= self.max_brightness {
                 ui.colored_label(
                     egui::Color32::from_rgb(255, 80, 80),
-                    "⚠ Min must be less than max",
+                    "Min must be less than max",
                 );
             }
             if self.api_key_input.trim().is_empty() {
                 ui.colored_label(
                     egui::Color32::from_rgb(255, 200, 60),
-                    "⚠ An API key is required",
+                    "An API key is required",
                 );
             }
 
@@ -203,7 +203,7 @@ impl eframe::App for SettingsApp {
                     && !self.api_key_input.trim().is_empty();
 
                 if ui
-                    .add_enabled(valid, egui::Button::new("💾  Save & Apply"))
+                    .add_enabled(valid, egui::Button::new("Save & Apply"))
                     .clicked()
                 {
                     self.save_and_apply();
