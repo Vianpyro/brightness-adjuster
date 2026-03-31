@@ -3,6 +3,10 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**/*.rs'
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
 
 permissions:
   contents: write
@@ -30,7 +34,7 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: lint-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: Linux-${{ hashFiles('**/Cargo.lock') }}
 
     - name: GTK dependencies
       run: |
@@ -73,7 +77,7 @@ jobs:
           ~/.cargo/registry
           ~/.cargo/git
           target
-        key: build-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
     - name: GTK deps (Linux)
       if: runner.os == 'Linux'
