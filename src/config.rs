@@ -7,10 +7,15 @@ use std::sync::atomic::{AtomicBool, AtomicU32};
 
 use crate::curve::{BrightnessCurve, MonitorOverride};
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const REPO_URL: &str = "https://github.com/Vianpyro/sunrise-brightness";
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub api_key: String,
+    pub latitude: Option<f64>,
+
+    pub longitude: Option<f64>,
     pub update_interval_secs: u64,
     pub start_on_startup: bool,
     pub global_curve: BrightnessCurve,
@@ -20,7 +25,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            api_key: String::new(),
+            latitude: None,
+            longitude: None,
             update_interval_secs: 180,
             start_on_startup: true,
             global_curve: BrightnessCurve::default(),
@@ -29,29 +35,20 @@ impl Default for Config {
     }
 }
 
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const REPO_URL: &str = "https://github.com/Vianpyro/sunrise-brightness";
-
 pub struct SharedState {
     pub config: RwLock<Config>,
-
     pub needs_refetch: AtomicBool,
-
     pub status: RwLock<String>,
-
     pub current_brightness: AtomicU32,
-
     pub current_elevation: RwLock<f64>,
-
     pub current_day_progress: RwLock<f64>,
-
     pub sunrise_str: RwLock<String>,
     pub noon_str: RwLock<String>,
     pub sunset_str: RwLock<String>,
-
     pub detected_monitors: RwLock<Vec<String>>,
-
     pub latest_version: RwLock<Option<String>>,
+
+    pub location_str: RwLock<String>,
 }
 
 impl SharedState {
@@ -68,6 +65,7 @@ impl SharedState {
             sunset_str: RwLock::new(String::new()),
             detected_monitors: RwLock::new(Vec::new()),
             latest_version: RwLock::new(None),
+            location_str: RwLock::new(String::new()),
         }
     }
 

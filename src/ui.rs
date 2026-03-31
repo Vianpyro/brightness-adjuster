@@ -28,8 +28,8 @@ pub struct SettingsApp {
     first_frame: bool,
 
     // Editable fields
-    api_key_input: String,
-    show_api_key: bool,
+    lat_input: String,
+    lon_input: String,
     update_interval_mins: u64,
     start_on_startup: bool,
     global_curve: BrightnessCurve,
@@ -49,8 +49,14 @@ impl SettingsApp {
             quit_menu_id,
             visible: false,
             first_frame: true,
-            api_key_input: config.api_key,
-            show_api_key: false,
+            lat_input: config
+                .latitude
+                .map(|v| format!("{v:.4}"))
+                .unwrap_or_default(),
+            lon_input: config
+                .longitude
+                .map(|v| format!("{v:.4}"))
+                .unwrap_or_default(),
             update_interval_mins: config.update_interval_secs / 60,
             start_on_startup: config.start_on_startup,
             global_curve: config.global_curve,
@@ -62,7 +68,8 @@ impl SettingsApp {
 
     fn load_fields_from_config(&mut self) {
         let cfg = self.state.config.read().unwrap().clone();
-        self.api_key_input = cfg.api_key;
+        self.lat_input = cfg.latitude.map(|v| format!("{v:.4}")).unwrap_or_default();
+        self.lon_input = cfg.longitude.map(|v| format!("{v:.4}")).unwrap_or_default();
         self.update_interval_mins = cfg.update_interval_secs / 60;
         self.start_on_startup = cfg.start_on_startup;
         self.global_curve = cfg.global_curve;
@@ -72,8 +79,12 @@ impl SettingsApp {
     }
 
     fn save_and_apply(&mut self) {
+        let latitude = self.lat_input.parse::<f64>().ok();
+        let longitude = self.lon_input.parse::<f64>().ok();
+
         let new_cfg = config::Config {
-            api_key: self.api_key_input.clone(),
+            latitude,
+            longitude,
             update_interval_secs: self.update_interval_mins * 60,
             start_on_startup: self.start_on_startup,
             global_curve: self.global_curve.clone(),
@@ -164,17 +175,18 @@ impl eframe::App for SettingsApp {
                     ui.heading(format!("Sunrise Brightness v{}", config::VERSION));
 
                     let latest = self.state.latest_version.read().unwrap().clone();
-                    if let Some(ref latest) = latest && latest.as_str() != config::VERSION
-                            && ui
-                                .small_button(format!("v{latest} available"))
-                                .on_hover_text("Open releases page")
-                                .clicked()
-                            {
-                                ui.ctx().open_url(egui::OpenUrl {
-                                    url: format!("{}/releases/latest", config::REPO_URL),
-                                    new_tab: true,
-                                });
-                            }
+                    if let Some(ref latest) = latest
+                        && latest.as_str() != config::VERSION
+                        && ui
+                            .small_button(format!("v{latest} available"))
+                            .on_hover_text("Open releases page")
+                            .clicked()
+                    {
+                        ui.ctx().open_url(egui::OpenUrl {
+                            url: format!("{}/releases/latest", config::REPO_URL),
+                            new_tab: true,
+                        });
+                    }
                 });
                 ui.add_space(4.0);
 
@@ -182,15 +194,38 @@ impl eframe::App for SettingsApp {
                     .num_columns(2)
                     .spacing([12.0, 6.0])
                     .show(ui, |ui| {
-                        ui.label("API key:");
+                                                ui.label("Latitude:");
                         ui.horizontal(|ui| {
                             ui.add(
-                                egui::TextEdit::singleline(&mut self.api_key_input)
-                                    .password(!self.show_api_key)
-                                    .desired_width(200.0),
+                                egui::TextEdit::singleline(&mut self.lat_input)
+                                    .hint_text("auto")
+                                    .desired_width(90.0),
                             );
-                            if ui.button(if self.show_api_key { "Hide" } else { "Show" }).clicked() {
-                                self.show_api_key = !self.show_api_key;
+                            ui.label("Longitude:");
+                            ui.add(
+                                egui::TextEdit::singleline(&mut self.lon_input)
+                                    .hint_text("auto")
+                                    .desired_width(90.0),
+                            );
+                        });
+                        ui.end_row();
+
+                        ui.label("");
+                        ui.horizontal(|ui| {
+                            let loc = self.state.location_str.read().unwrap().clone();
+                            if !loc.is_empty() {
+                                ui.label(
+                                    egui::RichText::new(format!("Detected: {loc}"))
+                                        .small()
+                                        .color(egui::Color32::GRAY),
+                                );
+                            }
+                            if self.lat_input.is_empty() && self.lon_input.is_empty() {
+                                ui.label(
+                                    egui::RichText::new("(auto-detected from IP)")
+                                        .small()
+                                        .color(egui::Color32::GRAY),
+                                );
                             }
                         });
                         ui.end_row();
@@ -206,22 +241,12 @@ impl eframe::App for SettingsApp {
                         ui.end_row();
                     });
 
-                if self.api_key_input.trim().is_empty() {
-                    ui.horizontal(|ui| {
-                        ui.colored_label(
-                            egui::Color32::from_rgb(255, 200, 60),
-                            "API key needed for sun times.",
-                        );
-                        if ui.small_button("Get one free").clicked() {
-                            ui.ctx().open_url(egui::OpenUrl {
-                                url: "https://app.ipgeolocation.io/dashboard".into(),
-                                new_tab: true,
-                            });
-                        }
-                    });
+                let lat_ok = self.lat_input.is_empty() || self.lat_input.parse::<f64>().is_ok();
+                let lon_ok = self.lon_input.is_empty() || self.lon_input.parse::<f64>().is_ok();
+                if !lat_ok || !lon_ok {
                     ui.colored_label(
-                        egui::Color32::GRAY,
-                        "Without a key, default times are used (6:00-18:00).",
+                        egui::Color32::from_rgb(255, 80, 80),
+                        "Invalid coordinates — use decimal degrees (e.g. 45.5, -73.6)",
                     );
                 }
 
@@ -297,7 +322,7 @@ impl eframe::App for SettingsApp {
                             ui.end_row();
 
                             ui.label("Elevation:");
-                            ui.label(format!("{:.0} %", elevation * 100.0));
+                            ui.label(format!("{:.1}°", elevation * 90.0));
                             ui.end_row();
                         }
                     });
@@ -305,7 +330,11 @@ impl eframe::App for SettingsApp {
                 ui.separator();
 
                 ui.horizontal(|ui| {
-                    if ui.button("Save & Apply").clicked() {
+                    let valid = lat_ok && lon_ok;
+                    if ui
+                        .add_enabled(valid, egui::Button::new("Save & Apply"))
+                        .clicked()
+                    {
                         self.save_and_apply();
                     }
                     if ui.button("Close").clicked() {
@@ -316,6 +345,7 @@ impl eframe::App for SettingsApp {
 
                 ui.add_space(8.0);
                 ui.separator();
+
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
                     ui.label(
@@ -369,7 +399,6 @@ impl SettingsApp {
                     .unwrap_or_else(|| curve::clean_display_name(raw_name));
 
                 let tab = ui.selectable_label(self.active_tab == i + 1, &label);
-
                 tab.clone().on_hover_text(raw_name);
 
                 if tab.clicked() {

@@ -4192,6 +4192,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "solar-positioning"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7ba5e0cd34d8151ab38c6d11b2b086ecc58dda9d70aea38f3fbf843248e5dd7"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "spirv"
 version = "0.4.0+sdk-1.4.341.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4226,7 +4235,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "sunrise-brightness"
-version = "3.1.2"
+version = "3.2.0"
 dependencies = [
  "anyhow",
  "auto-launch",
@@ -4237,6 +4246,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "solar-positioning",
  "toml 1.1.0+spec-1.1.0",
  "tray-icon",
 ]

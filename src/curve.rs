@@ -266,7 +266,7 @@ impl BrightnessCurve {
             "cinema" => Self::cinema(),
             "paper" => Self::paper(),
             "early_bird" => Self::early_bird(),
-            _ => Self::natural(), // default to natural
+            _ => Self::natural(),
         }
     }
 }
@@ -492,7 +492,7 @@ mod tests {
     fn cubic_hermite_interpolation_linear_curve() {
         let curve = BrightnessCurve::linear();
         let points = &curve.points;
-        // The curve should pass exactly through the control points
+
         for cp in points {
             let val = curve.evaluate(cp.position);
             assert!(
@@ -504,7 +504,6 @@ mod tests {
             );
         }
 
-        // The curve should be monotonic between control points (no overshoot)
         for i in 1..points.len() {
             let x0 = points[i - 1].position;
             let x1 = points[i].position;
@@ -515,7 +514,7 @@ mod tests {
                 let t = s as f64 / steps as f64;
                 let x = x0 + t * (x1 - x0);
                 let y = curve.evaluate(x);
-                // For the linear curve, the value should be between y0 and y1
+
                 let (min_y, max_y) = if y0 < y1 { (y0, y1) } else { (y1, y0) };
                 assert!(
                     y >= min_y - 1e-6 && y <= max_y + 1e-6,
