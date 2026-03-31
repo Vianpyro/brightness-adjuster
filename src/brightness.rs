@@ -298,9 +298,9 @@ pub fn run_loop(state: Arc<SharedState>) {
                     if config.weather_adaptive
                         && let Some(forecast) =
                             fetch_weather_forecast(lat, lon, st.sunrise, st.sunset)
-                        {
-                            *state.weather_forecast.write().unwrap() = forecast;
-                        }
+                    {
+                        *state.weather_forecast.write().unwrap() = forecast;
+                    }
 
                     sun_times = Some(st);
                     state.set_status("Running");
