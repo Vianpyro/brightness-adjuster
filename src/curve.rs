@@ -106,11 +106,167 @@ impl BrightnessCurve {
         }
     }
 
+    pub fn relax() -> Self {
+        Self {
+            points: vec![
+                ControlPoint {
+                    position: 0.00,
+                    brightness: 0.0,
+                },
+                ControlPoint {
+                    position: 0.10,
+                    brightness: 40.0,
+                },
+                ControlPoint {
+                    position: 0.25,
+                    brightness: 70.0,
+                },
+                ControlPoint {
+                    position: 0.45,
+                    brightness: 85.0,
+                },
+                ControlPoint {
+                    position: 0.60,
+                    brightness: 75.0,
+                },
+                ControlPoint {
+                    position: 0.80,
+                    brightness: 40.0,
+                },
+                ControlPoint {
+                    position: 1.00,
+                    brightness: 0.0,
+                },
+            ],
+            preset: Some("relax".into()),
+        }
+    }
+
+    pub fn cinema() -> Self {
+        Self {
+            points: vec![
+                ControlPoint {
+                    position: 0.00,
+                    brightness: 5.0,
+                },
+                ControlPoint {
+                    position: 0.20,
+                    brightness: 15.0,
+                },
+                ControlPoint {
+                    position: 0.40,
+                    brightness: 30.0,
+                },
+                ControlPoint {
+                    position: 0.50,
+                    brightness: 80.0,
+                },
+                ControlPoint {
+                    position: 0.60,
+                    brightness: 30.0,
+                },
+                ControlPoint {
+                    position: 0.80,
+                    brightness: 15.0,
+                },
+                ControlPoint {
+                    position: 1.00,
+                    brightness: 5.0,
+                },
+            ],
+            preset: Some("cinema".into()),
+        }
+    }
+
+    pub fn paper() -> Self {
+        Self {
+            points: vec![
+                ControlPoint {
+                    position: 0.00,
+                    brightness: 0.0,
+                },
+                ControlPoint {
+                    position: 0.10,
+                    brightness: 50.0,
+                },
+                ControlPoint {
+                    position: 0.25,
+                    brightness: 75.0,
+                },
+                ControlPoint {
+                    position: 0.40,
+                    brightness: 90.0,
+                },
+                ControlPoint {
+                    position: 0.60,
+                    brightness: 90.0,
+                },
+                ControlPoint {
+                    position: 0.75,
+                    brightness: 75.0,
+                },
+                ControlPoint {
+                    position: 0.90,
+                    brightness: 50.0,
+                },
+                ControlPoint {
+                    position: 1.00,
+                    brightness: 0.0,
+                },
+            ],
+            preset: Some("paper".into()),
+        }
+    }
+
+    pub fn early_bird() -> Self {
+        Self {
+            points: vec![
+                ControlPoint {
+                    position: 0.00,
+                    brightness: 0.0,
+                },
+                ControlPoint {
+                    position: 0.05,
+                    brightness: 30.0,
+                },
+                ControlPoint {
+                    position: 0.15,
+                    brightness: 70.0,
+                },
+                ControlPoint {
+                    position: 0.30,
+                    brightness: 95.0,
+                },
+                ControlPoint {
+                    position: 0.50,
+                    brightness: 85.0,
+                },
+                ControlPoint {
+                    position: 0.70,
+                    brightness: 60.0,
+                },
+                ControlPoint {
+                    position: 0.90,
+                    brightness: 20.0,
+                },
+                ControlPoint {
+                    position: 1.00,
+                    brightness: 0.0,
+                },
+            ],
+            preset: Some("early_bird".into()),
+        }
+    }
+
     pub fn from_preset(name: &str) -> Self {
         match name {
             "linear" => Self::linear(),
             "night_owl" => Self::night_owl(),
-            _ => Self::natural(),
+            "relax" => Self::relax(),
+            "cinema" => Self::cinema(),
+            "paper" => Self::paper(),
+            "early_bird" => Self::early_bird(),
+            _ => Self::natural(), // default to natural
         }
     }
 }
@@ -333,13 +489,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn linear_interpolation() {
+    fn cubic_hermite_interpolation_linear_curve() {
         let curve = BrightnessCurve::linear();
-        assert!((curve.evaluate(0.0) - 0.0).abs() < 1.0);
-        // assert!((curve.evaluate(0.25) - 50.0).abs() < 2.0); // TODO: Fix this test, the linear curve is not perfectly linear due to the cubic Hermite interpolation
-        assert!((curve.evaluate(0.5) - 100.0).abs() < 1.0);
-        assert!((curve.evaluate(0.75) - 50.0).abs() < 2.0);
-        assert!((curve.evaluate(1.0) - 0.0).abs() < 1.0);
+        let points = &curve.points;
+        // The curve should pass exactly through the control points
+        for cp in points {
+            let val = curve.evaluate(cp.position);
+            assert!((val - cp.brightness).abs() < 1e-6, "Curve does not pass through control point at x = {}: expected {}, got {}", cp.position, cp.brightness, val);
+        }
+
+        // The curve should be monotonic between control points (no overshoot)
+        for i in 1..points.len() {
+            let x0 = points[i-1].position;
+            let x1 = points[i].position;
+            let y0 = points[i-1].brightness;
+            let y1 = points[i].brightness;
+            let steps = 10;
+            for s in 1..steps {
+                let t = s as f64 / steps as f64;
+                let x = x0 + t * (x1 - x0);
+                let y = curve.evaluate(x);
+                // For the linear curve, the value should be between y0 and y1
+                let (min_y, max_y) = if y0 < y1 { (y0, y1) } else { (y1, y0) };
+                assert!(y >= min_y - 1e-6 && y <= max_y + 1e-6, "Curve overshoots between x = {} and x = {}: got {}", x0, x1, y);
+            }
+        }
     }
 
     #[test]

@@ -446,6 +446,10 @@ impl SettingsApp {
                 ("natural", "Natural"),
                 ("linear", "Linear"),
                 ("night_owl", "Night owl"),
+                ("relax", "Relax"),
+                ("cinema", "Cinema"),
+                ("paper", "Paper"),
+                ("early_bird", "Early bird"),
             ] {
                 let active = current_preset.as_deref() == Some(id);
                 if ui.selectable_label(active, label).clicked() {
