@@ -29,6 +29,9 @@ impl Default for Config {
     }
 }
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const REPO_URL: &str = "https://github.com/Vianpyro/sunrise-brightness";
+
 pub struct SharedState {
     pub config: RwLock<Config>,
 
@@ -47,6 +50,8 @@ pub struct SharedState {
     pub sunset_str: RwLock<String>,
 
     pub detected_monitors: RwLock<Vec<String>>,
+
+    pub latest_version: RwLock<Option<String>>,
 }
 
 impl SharedState {
@@ -62,6 +67,7 @@ impl SharedState {
             noon_str: RwLock::new(String::new()),
             sunset_str: RwLock::new(String::new()),
             detected_monitors: RwLock::new(Vec::new()),
+            latest_version: RwLock::new(None),
         }
     }
 

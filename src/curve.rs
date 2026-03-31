@@ -283,10 +283,10 @@ impl MonitorOverride {
     }
 
     pub fn display_label(&self) -> String {
-        if let Some(alias) = &self.alias {
-            if !alias.is_empty() {
-                return alias.clone();
-            }
+        if let Some(alias) = &self.alias
+            && !alias.is_empty()
+        {
+            return alias.clone();
         }
         clean_display_name(&self.name)
     }
@@ -312,10 +312,10 @@ pub fn clean_display_name(raw: &str) -> String {
         .trim_start_matches("\\\\.\\")
         .trim_start_matches("\\\\?\\");
     let s = s.split('\\').next().unwrap_or(s);
-    if let Some(rest) = s.strip_prefix("DISPLAY") {
-        if let Ok(n) = rest.parse::<u32>() {
-            return format!("Display {n}");
-        }
+    if let Some(rest) = s.strip_prefix("DISPLAY")
+        && let Ok(n) = rest.parse::<u32>()
+    {
+        return format!("Display {n}");
     }
     s.to_string()
 }

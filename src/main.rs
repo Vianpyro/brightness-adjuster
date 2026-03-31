@@ -29,7 +29,7 @@ fn main() -> Result<()> {
 
     let _tray = TrayIconBuilder::new()
         .with_menu(Box::new(tray_menu))
-        .with_tooltip("Sunrise Brightness")
+        .with_tooltip(format!("Sunrise Brightness v{}", config::VERSION))
         .with_icon(sun_icon())
         .build()?;
 

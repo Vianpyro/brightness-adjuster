@@ -160,7 +160,22 @@ impl eframe::App for SettingsApp {
 
         egui::CentralPanel::default().show_inside(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.heading("Sunrise Brightness");
+                ui.horizontal(|ui| {
+                    ui.heading(format!("Sunrise Brightness v{}", config::VERSION));
+
+                    let latest = self.state.latest_version.read().unwrap().clone();
+                    if let Some(ref latest) = latest && latest.as_str() != config::VERSION
+                            && ui
+                                .small_button(format!("v{latest} available"))
+                                .on_hover_text("Open releases page")
+                                .clicked()
+                            {
+                                ui.ctx().open_url(egui::OpenUrl {
+                                    url: format!("{}/releases/latest", config::REPO_URL),
+                                    new_tab: true,
+                                });
+                            }
+                });
                 ui.add_space(4.0);
 
                 egui::Grid::new("settings_grid")
@@ -206,7 +221,7 @@ impl eframe::App for SettingsApp {
                     });
                     ui.colored_label(
                         egui::Color32::GRAY,
-                        "Without a key, default times are used (6:00–18:00).",
+                        "Without a key, default times are used (6:00-18:00).",
                     );
                 }
 
@@ -240,7 +255,7 @@ impl eframe::App for SettingsApp {
                     ui.add_space(8.0);
                     ui.colored_label(
                         egui::Color32::GRAY,
-                        "This display is ignored — brightness will not be adjusted.",
+                        "This display is ignored, brightness will not be adjusted.",
                     );
                     ui.add_space(8.0);
                 } else {
@@ -296,6 +311,32 @@ impl eframe::App for SettingsApp {
                     if ui.button("Close").clicked() {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
                         self.visible = false;
+                    }
+                });
+
+                ui.add_space(8.0);
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 4.0;
+                    ui.label(
+                        egui::RichText::new("Made by Vianpyro")
+                            .small()
+                            .color(egui::Color32::GRAY),
+                    );
+                    ui.label(
+                        egui::RichText::new("·")
+                            .small()
+                            .color(egui::Color32::GRAY),
+                    );
+                    if ui
+                        .small_button("GitHub")
+                        .on_hover_text(config::REPO_URL)
+                        .clicked()
+                    {
+                        ui.ctx().open_url(egui::OpenUrl {
+                            url: config::REPO_URL.to_string(),
+                            new_tab: true,
+                        });
                     }
                 });
             });
@@ -628,52 +669,51 @@ impl SettingsApp {
         let snap_enabled = !ui.input(|i| i.modifiers.shift);
         let pointer_pos = response.interact_pointer_pos();
 
-        if response.drag_started() {
-            if let Some(pos) = pointer_pos {
-                self.dragging_point = None;
-                let mut min_dist = point_hit_radius;
-                for (i, pt) in display_curve.points.iter().enumerate() {
-                    let screen_pt = egui::pos2(
-                        progress_to_x(pt.position, &plot_rect),
-                        bright_to_y(pt.brightness, &plot_rect),
-                    );
-                    let dist = pos.distance(screen_pt);
-                    if dist < min_dist {
-                        min_dist = dist;
-                        self.dragging_point = Some(i);
-                    }
+        if response.drag_started()
+            && let Some(pos) = pointer_pos
+        {
+            self.dragging_point = None;
+            let mut min_dist = point_hit_radius;
+            for (i, pt) in display_curve.points.iter().enumerate() {
+                let screen_pt = egui::pos2(
+                    progress_to_x(pt.position, &plot_rect),
+                    bright_to_y(pt.brightness, &plot_rect),
+                );
+                let dist = pos.distance(screen_pt);
+                if dist < min_dist {
+                    min_dist = dist;
+                    self.dragging_point = Some(i);
                 }
             }
         }
 
-        if response.dragged() {
-            if let (Some(idx), Some(pos)) = (self.dragging_point, pointer_pos) {
-                if let Some(c) = self.active_curve_mut() {
-                    let n = c.points.len();
-                    let raw_pos = x_to_progress(pos.x, &plot_rect);
-                    let raw_bright = y_to_bright(pos.y, &plot_rect);
+        if response.dragged()
+            && let (Some(idx), Some(pos)) = (self.dragging_point, pointer_pos)
+            && let Some(c) = self.active_curve_mut()
+        {
+            let n = c.points.len();
+            let raw_pos = x_to_progress(pos.x, &plot_rect);
+            let raw_bright = y_to_bright(pos.y, &plot_rect);
 
-                    let position = if idx == 0 {
-                        0.0
-                    } else if idx == n - 1 {
-                        1.0
-                    } else if snap_enabled {
-                        curve::snap_to_grid(raw_pos, curve::SNAP_X, 1.0).clamp(0.01, 0.99)
-                    } else {
-                        raw_pos.clamp(0.01, 0.99)
-                    };
+            let position = if idx == 0 {
+                0.0
+            } else if idx == n - 1 {
+                1.0
+            } else if snap_enabled {
+                curve::snap_to_grid(raw_pos, curve::SNAP_X, 1.0).clamp(0.01, 0.99)
+            } else {
+                raw_pos.clamp(0.01, 0.99)
+            };
 
-                    let brightness = if snap_enabled {
-                        curve::snap_to_grid(raw_bright, curve::SNAP_Y, 100.0)
-                    } else {
-                        raw_bright
-                    };
+            let brightness = if snap_enabled {
+                curve::snap_to_grid(raw_bright, curve::SNAP_Y, 100.0)
+            } else {
+                raw_bright
+            };
 
-                    c.points[idx].position = position;
-                    c.points[idx].brightness = brightness;
-                    c.preset = None;
-                }
-            }
+            c.points[idx].position = position;
+            c.points[idx].brightness = brightness;
+            c.preset = None;
         }
 
         if response.drag_stopped() && self.dragging_point.is_some() {
@@ -683,38 +723,38 @@ impl SettingsApp {
             self.dragging_point = None;
         }
 
-        if response.double_clicked() {
-            if let Some(pos) = response.interact_pointer_pos() {
-                let position = x_to_progress(pos.x, &plot_rect);
-                let brightness = y_to_bright(pos.y, &plot_rect);
-                if let Some(c) = self.active_curve_mut() {
-                    c.add_point(position, brightness);
-                }
+        if response.double_clicked()
+            && let Some(pos) = response.interact_pointer_pos()
+        {
+            let position = x_to_progress(pos.x, &plot_rect);
+            let brightness = y_to_bright(pos.y, &plot_rect);
+            if let Some(c) = self.active_curve_mut() {
+                c.add_point(position, brightness);
             }
         }
 
-        if response.secondary_clicked() {
-            if let Some(pos) = response.interact_pointer_pos() {
-                let mut nearest = None;
-                let mut min_dist = point_hit_radius;
+        if response.secondary_clicked()
+            && let Some(pos) = response.interact_pointer_pos()
+        {
+            let mut nearest = None;
+            let mut min_dist = point_hit_radius;
 
-                let pts = &self.active_curve_display().points;
-                for (i, pt) in pts.iter().enumerate() {
-                    let screen_pt = egui::pos2(
-                        progress_to_x(pt.position, &plot_rect),
-                        bright_to_y(pt.brightness, &plot_rect),
-                    );
-                    let dist = pos.distance(screen_pt);
-                    if dist < min_dist {
-                        min_dist = dist;
-                        nearest = Some(i);
-                    }
+            let pts = &self.active_curve_display().points;
+            for (i, pt) in pts.iter().enumerate() {
+                let screen_pt = egui::pos2(
+                    progress_to_x(pt.position, &plot_rect),
+                    bright_to_y(pt.brightness, &plot_rect),
+                );
+                let dist = pos.distance(screen_pt);
+                if dist < min_dist {
+                    min_dist = dist;
+                    nearest = Some(i);
                 }
-                if let Some(idx) = nearest {
-                    if let Some(c) = self.active_curve_mut() {
-                        c.remove_point(idx);
-                    }
-                }
+            }
+            if let Some(idx) = nearest
+                && let Some(c) = self.active_curve_mut()
+            {
+                c.remove_point(idx);
             }
         }
     }
