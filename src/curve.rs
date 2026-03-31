@@ -495,14 +495,20 @@ mod tests {
         // The curve should pass exactly through the control points
         for cp in points {
             let val = curve.evaluate(cp.position);
-            assert!((val - cp.brightness).abs() < 1e-6, "Curve does not pass through control point at x = {}: expected {}, got {}", cp.position, cp.brightness, val);
+            assert!(
+                (val - cp.brightness).abs() < 1e-6,
+                "Curve does not pass through control point at x = {}: expected {}, got {}",
+                cp.position,
+                cp.brightness,
+                val
+            );
         }
 
         // The curve should be monotonic between control points (no overshoot)
         for i in 1..points.len() {
-            let x0 = points[i-1].position;
+            let x0 = points[i - 1].position;
             let x1 = points[i].position;
-            let y0 = points[i-1].brightness;
+            let y0 = points[i - 1].brightness;
             let y1 = points[i].brightness;
             let steps = 10;
             for s in 1..steps {
@@ -511,7 +517,13 @@ mod tests {
                 let y = curve.evaluate(x);
                 // For the linear curve, the value should be between y0 and y1
                 let (min_y, max_y) = if y0 < y1 { (y0, y1) } else { (y1, y0) };
-                assert!(y >= min_y - 1e-6 && y <= max_y + 1e-6, "Curve overshoots between x = {} and x = {}: got {}", x0, x1, y);
+                assert!(
+                    y >= min_y - 1e-6 && y <= max_y + 1e-6,
+                    "Curve overshoots between x = {} and x = {}: got {}",
+                    x0,
+                    x1,
+                    y
+                );
             }
         }
     }
