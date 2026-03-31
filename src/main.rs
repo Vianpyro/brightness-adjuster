@@ -3,7 +3,10 @@
 mod brightness;
 mod config;
 mod curve;
+mod solar;
 mod ui;
+mod updater;
+mod weather;
 
 use anyhow::Result;
 use eframe::egui;
