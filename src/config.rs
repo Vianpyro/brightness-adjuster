@@ -14,12 +14,13 @@ pub const REPO_URL: &str = "https://github.com/Vianpyro/sunrise-brightness";
 #[serde(default)]
 pub struct Config {
     pub latitude: Option<f64>,
-
     pub longitude: Option<f64>,
     pub update_interval_secs: u64,
     pub start_on_startup: bool,
     pub global_curve: BrightnessCurve,
     pub monitors: Vec<MonitorOverride>,
+    pub weather_adaptive: bool,
+    pub cloud_attenuation: f64,
 }
 
 impl Default for Config {
@@ -31,6 +32,8 @@ impl Default for Config {
             start_on_startup: true,
             global_curve: BrightnessCurve::default(),
             monitors: Vec::new(),
+            weather_adaptive: true,
+            cloud_attenuation: 0.5,
         }
     }
 }
@@ -47,8 +50,9 @@ pub struct SharedState {
     pub sunset_str: RwLock<String>,
     pub detected_monitors: RwLock<Vec<String>>,
     pub latest_version: RwLock<Option<String>>,
-
     pub location_str: RwLock<String>,
+    pub weather_forecast: RwLock<Vec<(f64, f64)>>,
+    pub current_cloud_cover: RwLock<f64>,
 }
 
 impl SharedState {
@@ -66,6 +70,8 @@ impl SharedState {
             detected_monitors: RwLock::new(Vec::new()),
             latest_version: RwLock::new(None),
             location_str: RwLock::new(String::new()),
+            weather_forecast: RwLock::new(Vec::new()),
+            current_cloud_cover: RwLock::new(0.0),
         }
     }
 

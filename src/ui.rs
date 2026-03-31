@@ -4,6 +4,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tray_icon::menu::{MenuEvent, MenuId};
 
+use crate::brightness::interpolate_cloud_cover;
 use crate::config::{self, SharedState};
 use crate::curve::{self, BrightnessCurve, MonitorOverride};
 
@@ -32,6 +33,8 @@ pub struct SettingsApp {
     lon_input: String,
     update_interval_mins: u64,
     start_on_startup: bool,
+    weather_adaptive: bool,
+    cloud_attenuation: f64,
     global_curve: BrightnessCurve,
     monitor_overrides: Vec<MonitorOverride>,
 
@@ -59,6 +62,8 @@ impl SettingsApp {
                 .unwrap_or_default(),
             update_interval_mins: config.update_interval_secs / 60,
             start_on_startup: config.start_on_startup,
+            weather_adaptive: config.weather_adaptive,
+            cloud_attenuation: config.cloud_attenuation,
             global_curve: config.global_curve,
             monitor_overrides: config.monitors,
             active_tab: 0,
@@ -72,6 +77,8 @@ impl SettingsApp {
         self.lon_input = cfg.longitude.map(|v| format!("{v:.4}")).unwrap_or_default();
         self.update_interval_mins = cfg.update_interval_secs / 60;
         self.start_on_startup = cfg.start_on_startup;
+        self.weather_adaptive = cfg.weather_adaptive;
+        self.cloud_attenuation = cfg.cloud_attenuation;
         self.global_curve = cfg.global_curve;
         self.monitor_overrides = cfg.monitors;
         self.active_tab = 0;
@@ -79,14 +86,13 @@ impl SettingsApp {
     }
 
     fn save_and_apply(&mut self) {
-        let latitude = self.lat_input.parse::<f64>().ok();
-        let longitude = self.lon_input.parse::<f64>().ok();
-
         let new_cfg = config::Config {
-            latitude,
-            longitude,
+            latitude: self.lat_input.parse::<f64>().ok(),
+            longitude: self.lon_input.parse::<f64>().ok(),
             update_interval_secs: self.update_interval_mins * 60,
             start_on_startup: self.start_on_startup,
+            weather_adaptive: self.weather_adaptive,
+            cloud_attenuation: self.cloud_attenuation,
             global_curve: self.global_curve.clone(),
             monitors: self.monitor_overrides.clone(),
         };
@@ -169,32 +175,50 @@ impl eframe::App for SettingsApp {
             return;
         }
 
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading(format!("Sunrise Brightness v{}", config::VERSION));
+        let mut should_close = false;
 
-                    let latest = self.state.latest_version.read().unwrap().clone();
-                    if let Some(ref latest) = latest
-                        && latest.as_str() != config::VERSION
-                        && ui
-                            .small_button(format!("v{latest} available"))
-                            .on_hover_text("Open releases page")
-                            .clicked()
-                    {
-                        ui.ctx().open_url(egui::OpenUrl {
-                            url: format!("{}/releases/latest", config::REPO_URL),
-                            new_tab: true,
-                        });
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            let bar_rect =
+                egui::Rect::from_min_size(ui.cursor().min, egui::vec2(ui.available_width(), 28.0));
+            let drag = ui.interact(bar_rect, egui::Id::new("title_drag"), egui::Sense::drag());
+            if drag.dragged() {
+                ctx.send_viewport_cmd(egui::ViewportCommand::StartDrag);
+            }
+
+            ui.horizontal(|ui| {
+                ui.set_min_height(28.0);
+                ui.add_space(4.0);
+                ui.strong(format!("Sunrise Brightness v{}", config::VERSION));
+
+                let latest = self.state.latest_version.read().unwrap().clone();
+                if let Some(ref latest) = latest
+                    && latest.as_str() != config::VERSION
+                    && ui
+                        .small_button(format!("v{latest} available"))
+                        .on_hover_text("Open releases page")
+                        .clicked()
+                {
+                    ctx.open_url(egui::OpenUrl {
+                        url: format!("{}/releases/latest", config::REPO_URL),
+                        new_tab: true,
+                    });
+                }
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("✕").on_hover_text("Hide to tray").clicked() {
+                        should_close = true;
                     }
                 });
-                ui.add_space(4.0);
+            });
 
+            ui.separator();
+
+            egui::ScrollArea::vertical().show(ui, |ui| {
                 egui::Grid::new("settings_grid")
                     .num_columns(2)
                     .spacing([12.0, 6.0])
                     .show(ui, |ui| {
-                                                ui.label("Latitude:");
+                        ui.label("Latitude:");
                         ui.horizontal(|ui| {
                             ui.add(
                                 egui::TextEdit::singleline(&mut self.lat_input)
@@ -219,8 +243,7 @@ impl eframe::App for SettingsApp {
                                         .small()
                                         .color(egui::Color32::GRAY),
                                 );
-                            }
-                            if self.lat_input.is_empty() && self.lon_input.is_empty() {
+                            } else if self.lat_input.is_empty() && self.lon_input.is_empty() {
                                 ui.label(
                                     egui::RichText::new("(auto-detected from IP)")
                                         .small()
@@ -239,10 +262,25 @@ impl eframe::App for SettingsApp {
                         ui.label("Start on boot:");
                         ui.checkbox(&mut self.start_on_startup, "");
                         ui.end_row();
+
+                        ui.label("Adapt to weather:");
+                        ui.checkbox(&mut self.weather_adaptive, "")
+                            .on_hover_text("Dim brightness when cloudy/rainy (Open-Meteo, no API key)");
+                        ui.end_row();
+
+                        if self.weather_adaptive {
+                            ui.label("Cloud dimming:");
+                            let mut att = (self.cloud_attenuation * 100.0) as i32;
+                            ui.add(egui::Slider::new(&mut att, 0..=100).suffix(" %"));
+                            self.cloud_attenuation = att as f64 / 100.0;
+                            ui.end_row();
+                        }
                     });
 
-                let lat_ok = self.lat_input.is_empty() || self.lat_input.parse::<f64>().is_ok();
-                let lon_ok = self.lon_input.is_empty() || self.lon_input.parse::<f64>().is_ok();
+                let lat_ok =
+                    self.lat_input.is_empty() || self.lat_input.parse::<f64>().is_ok();
+                let lon_ok =
+                    self.lon_input.is_empty() || self.lon_input.parse::<f64>().is_ok();
                 if !lat_ok || !lon_ok {
                     ui.colored_label(
                         egui::Color32::from_rgb(255, 80, 80),
@@ -254,7 +292,6 @@ impl eframe::App for SettingsApp {
 
                 let monitors = self.state.detected_monitors.read().unwrap().clone();
                 self.draw_monitor_tabs(ui, &monitors);
-
                 ui.add_space(4.0);
 
                 if self.active_tab > 0 {
@@ -284,12 +321,24 @@ impl eframe::App for SettingsApp {
                     );
                     ui.add_space(8.0);
                 } else {
-                    self.draw_curve_editor(ui, elevation, day_progress);
+                    let weather_forecast = if self.weather_adaptive {
+                        self.state.weather_forecast.read().unwrap().clone()
+                    } else {
+                        Vec::new()
+                    };
+
+                    self.draw_curve_editor(
+                        ui,
+                        elevation,
+                        day_progress,
+                        &weather_forecast,
+                        self.cloud_attenuation,
+                    );
 
                     ui.add_space(2.0);
                     ui.label(
                         egui::RichText::new(
-                            "Drag points to reshape. Double-click to add. Right-click to remove. Hold Shift to disable grid snapping.",
+                            "Drag points to reshape. Double-click to add. Right-click to remove. Hold Shift to disable snapping.",
                         )
                         .small()
                         .color(egui::Color32::GRAY),
@@ -325,6 +374,13 @@ impl eframe::App for SettingsApp {
                             ui.label(format!("{:.1}°", elevation * 90.0));
                             ui.end_row();
                         }
+
+                        if self.weather_adaptive {
+                            let cloud = *self.state.current_cloud_cover.read().unwrap();
+                            ui.label("Cloud cover:");
+                            ui.label(format!("{:.0} %", cloud * 100.0));
+                            ui.end_row();
+                        }
                     });
 
                 ui.separator();
@@ -338,8 +394,7 @@ impl eframe::App for SettingsApp {
                         self.save_and_apply();
                     }
                     if ui.button("Close").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-                        self.visible = false;
+                        should_close = true;
                     }
                 });
 
@@ -363,7 +418,7 @@ impl eframe::App for SettingsApp {
                         .on_hover_text(config::REPO_URL)
                         .clicked()
                     {
-                        ui.ctx().open_url(egui::OpenUrl {
+                        ctx.open_url(egui::OpenUrl {
                             url: config::REPO_URL.to_string(),
                             new_tab: true,
                         });
@@ -371,6 +426,11 @@ impl eframe::App for SettingsApp {
                 });
             });
         });
+
+        if should_close {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+            self.visible = false;
+        }
     }
 }
 
@@ -435,7 +495,6 @@ impl SettingsApp {
 
         ui.horizontal(|ui| {
             ui.label("Mode:");
-
             let mode = self.monitor_overrides[idx].mode.clone();
 
             if ui.selectable_label(mode == "global", "Global").clicked() {
@@ -491,7 +550,14 @@ impl SettingsApp {
         });
     }
 
-    fn draw_curve_editor(&mut self, ui: &mut egui::Ui, _current_elevation: f64, day_progress: f64) {
+    fn draw_curve_editor(
+        &mut self,
+        ui: &mut egui::Ui,
+        _current_elevation: f64,
+        day_progress: f64,
+        weather_forecast: &[(f64, f64)],
+        cloud_attenuation: f64,
+    ) {
         let editable = self.active_curve_is_editable();
         let sense = if editable {
             egui::Sense::click_and_drag()
@@ -500,7 +566,7 @@ impl SettingsApp {
         };
 
         let plot_w = ui.available_width().min(440.0);
-        let margin_left = 32.0_f32;
+        let margin_left = 36.0_f32;
         let margin_bottom = 22.0_f32;
         let plot_h = 180.0_f32;
         let total = egui::vec2(plot_w, plot_h + margin_bottom + 8.0);
@@ -628,26 +694,71 @@ impl SettingsApp {
         let display_curve = self.active_curve_display();
         let blue = egui::Color32::from_rgb(55, 138, 221);
 
-        let curve_points: Vec<egui::Pos2> = (0..=200)
-            .map(|i| {
-                let p = i as f64 / 200.0;
-                egui::pos2(
-                    progress_to_x(p, &plot_rect),
-                    bright_to_y(display_curve.evaluate(p), &plot_rect),
-                )
-            })
-            .collect();
+        if !weather_forecast.is_empty() {
+            let green = egui::Color32::from_rgba_premultiplied(80, 190, 80, 180);
+            let forecast_points: Vec<egui::Pos2> = (0..=200)
+                .map(|i| {
+                    let p = i as f64 / 200.0;
+                    let base = display_curve.evaluate(p);
+                    let cloud = interpolate_cloud_cover(weather_forecast, p);
+                    let effective = base * (1.0 - cloud * cloud_attenuation);
+                    egui::pos2(
+                        progress_to_x(p, &plot_rect),
+                        bright_to_y(effective.clamp(0.0, 100.0), &plot_rect),
+                    )
+                })
+                .collect();
 
-        if curve_points.len() >= 2 {
-            painter.add(egui::Shape::line(
-                curve_points,
-                egui::Stroke::new(2.0, blue),
-            ));
+            if forecast_points.len() >= 2 {
+                painter.add(egui::Shape::line(
+                    forecast_points,
+                    egui::Stroke::new(2.0, green),
+                ));
+            }
+
+            let base_points: Vec<egui::Pos2> = (0..=200)
+                .map(|i| {
+                    let p = i as f64 / 200.0;
+                    egui::pos2(
+                        progress_to_x(p, &plot_rect),
+                        bright_to_y(display_curve.evaluate(p), &plot_rect),
+                    )
+                })
+                .collect();
+            for i in (0..base_points.len() - 1).step_by(4) {
+                let end = (i + 2).min(base_points.len() - 1);
+                painter.line_segment(
+                    [base_points[i], base_points[end]],
+                    egui::Stroke::new(1.0, blue.gamma_multiply(0.4)),
+                );
+            }
+        } else {
+            let curve_points: Vec<egui::Pos2> = (0..=200)
+                .map(|i| {
+                    let p = i as f64 / 200.0;
+                    egui::pos2(
+                        progress_to_x(p, &plot_rect),
+                        bright_to_y(display_curve.evaluate(p), &plot_rect),
+                    )
+                })
+                .collect();
+            if curve_points.len() >= 2 {
+                painter.add(egui::Shape::line(
+                    curve_points,
+                    egui::Stroke::new(2.0, blue),
+                ));
+            }
         }
 
         if day_progress > 0.001 && day_progress < 0.999 {
             let now_x = progress_to_x(day_progress, &plot_rect);
-            let now_bright = display_curve.evaluate(day_progress);
+            let now_bright = if !weather_forecast.is_empty() {
+                let base = display_curve.evaluate(day_progress);
+                let cloud = interpolate_cloud_cover(weather_forecast, day_progress);
+                (base * (1.0 - cloud * cloud_attenuation)).clamp(0.0, 100.0)
+            } else {
+                display_curve.evaluate(day_progress)
+            };
             let now_y = bright_to_y(now_bright, &plot_rect);
 
             let red = egui::Color32::from_rgba_premultiplied(220, 60, 60, 140);
@@ -664,7 +775,12 @@ impl SettingsApp {
                 );
             }
 
-            painter.circle_filled(egui::pos2(now_x, now_y), 5.0, blue);
+            let dot_color = if weather_forecast.is_empty() {
+                blue
+            } else {
+                egui::Color32::from_rgb(80, 190, 80)
+            };
+            painter.circle_filled(egui::pos2(now_x, now_y), 5.0, dot_color);
             painter.circle_stroke(
                 egui::pos2(now_x, now_y),
                 5.0,

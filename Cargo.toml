@@ -1,8 +1,8 @@
 [package]
 name = "sunrise-brightness"
-version = "3.2.0"
+version = "3.3.0"
 edition = "2024"
-description = "Adjusts screen brightness based on sunrise/sunset - with system tray, curve editor, and per-monitor support"
+description = "Adjusts screen brightness based on sunrise/sunset - with system tray, curve editor, weather adaptation, and per-monitor support"
 license = "MIT"
  
 [dependencies]
