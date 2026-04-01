@@ -3,7 +3,7 @@ use chrono::Local;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::config::{Config, SharedState};
 use crate::curve;
@@ -18,15 +18,23 @@ fn set_all_displays(target: u32) {
 }
 
 fn fade_brightness(from: u32, to: u32) {
-    if from == to {
-        return;
-    }
-    let step: i32 = if to > from { 1 } else { -1 };
-    let mut value = from as i32;
-    while value != to as i32 {
-        value += step;
-        set_all_displays(value as u32);
-        thread::sleep(Duration::from_millis(15));
+    let duration = Duration::from_millis(3000);
+    let start = Instant::now();
+
+    loop {
+        let elapsed = start.elapsed();
+        let t = (elapsed.as_secs_f32() / duration.as_secs_f32()).min(1.0);
+
+        let eased = t * t * (3.0 - 2.0 * t);
+
+        let value = from as f32 + (to as f32 - from as f32) * eased;
+        set_all_displays(value.round() as u32);
+
+        if t >= 1.0 {
+            break;
+        }
+
+        thread::sleep(Duration::from_millis(16));
     }
 }
 
