@@ -7,7 +7,7 @@ license = "MIT"
  
 [dependencies]
 eframe = { version = "0.34.1", default-features = true }
-tray-icon = "0.21.3"
+tray-icon = "0.22.0"
 brightness = { version = "0.8", features = ["blocking"] }
 solar-positioning = { version = "0.5.1", features = ["chrono"] }
 reqwest = { version = "0.13.2", features = ["blocking", "json"] }
