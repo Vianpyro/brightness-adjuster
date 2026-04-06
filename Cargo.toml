@@ -13,7 +13,7 @@ solar-positioning = { version = "0.5.1", features = ["chrono"] }
 reqwest = { version = "0.13.2", features = ["blocking", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "1.1.1"
+toml = "1.1.2"
 chrono = "0.4"
 directories = "6"
 auto-launch = "0.6.0"
