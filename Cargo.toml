@@ -1,10 +1,10 @@
 [package]
 name = "sunrise-brightness"
-version = "3.3.2"
+version = "3.4.0"
 edition = "2024"
 description = "Adjusts screen brightness based on sunrise/sunset - with system tray, curve editor, weather adaptation, and per-monitor support"
 license = "MIT"
- 
+
 [dependencies]
 eframe = { version = "0.34.1", default-features = true }
 tray-icon = "0.22.0"
@@ -25,3 +25,13 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 strip = "debuginfo"
+
+[package.metadata.deb]
+maintainer = "Vianpyro"
+copyright = "2026 Vianpyro"
+section = "utility"
+priority = "optional"
+depends = "libgtk-3-0, libxdo3, libappindicator3-1, libssl3"
+assets = [
+    ["target/release/sunrise-brightness", "/usr/bin/", "755"],
+]
