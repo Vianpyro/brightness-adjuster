@@ -126,6 +126,21 @@ jobs:
           name: bin-${{ runner.os }}
           path: target/release/${{ steps.pkg.outputs.name }}-*
 
+      - name: Build .deb package
+        if: runner.os == 'Linux'
+        run: |
+          cargo install cargo-deb --locked 2>/dev/null || true
+          cp target/release/${{ steps.pkg.outputs.name }}-linux \
+             target/release/${{ steps.pkg.outputs.name }}
+          cargo deb --no-build
+
+      - name: Upload .deb
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: target/debian/*.deb
+
   release:
     needs: build
     runs-on: ubuntu-latest
