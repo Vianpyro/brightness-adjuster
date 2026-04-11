@@ -17,11 +17,12 @@ use tray_icon::{
 };
 
 fn main() -> Result<()> {
-    let is_startup = std::env::args().any(|a| a == "--startup");
-
     #[cfg(target_os = "windows")]
-    if is_startup {
-        sync_system_clock();
+    {
+        let is_startup = std::env::args().any(|a| a == "--startup");
+        if is_startup {
+            sync_system_clock();
+        }
     }
 
     let cfg = config::load_config();
