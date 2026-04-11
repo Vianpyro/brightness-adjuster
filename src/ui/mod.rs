@@ -330,6 +330,7 @@ fn toggle_autostart(enable: bool) -> anyhow::Result<()> {
     let launcher = auto_launch::AutoLaunchBuilder::new()
         .set_app_name("sunrise-brightness")
         .set_app_path(&exe)
+        .set_args(&["--startup"])
         .build()
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
