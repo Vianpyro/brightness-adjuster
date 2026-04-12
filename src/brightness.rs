@@ -119,7 +119,7 @@ fn resolve_location(config: &Config, state: &SharedState) -> Option<(f64, f64)> 
         }
         None => {
             *state.location_str.write().unwrap() = "Unknown (using defaults)".into();
-            state.set_status("Location detection failed, using 6:00–18:00 defaults");
+            state.set_status("Location detection failed, using 6:00-18:00 defaults");
 
             *state.sunrise_str.write().unwrap() = "06:00".into();
             *state.noon_str.write().unwrap() = "12:00".into();

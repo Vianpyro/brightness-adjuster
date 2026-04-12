@@ -17,14 +17,6 @@ use tray_icon::{
 };
 
 fn main() -> Result<()> {
-    #[cfg(target_os = "windows")]
-    {
-        let is_startup = std::env::args().any(|a| a == "--startup");
-        if is_startup {
-            sync_system_clock();
-        }
-    }
-
     let cfg = config::load_config();
     let state = Arc::new(config::SharedState::new(cfg));
 
@@ -67,15 +59,6 @@ fn main() -> Result<()> {
     .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn sync_system_clock() {
-    use std::os::windows::process::CommandExt;
-    let _ = std::process::Command::new("w32tm")
-        .args(["/resync", "/nowait"])
-        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
-        .spawn();
 }
 
 fn sun_icon() -> tray_icon::Icon {
