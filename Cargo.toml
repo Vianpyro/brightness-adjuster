@@ -31,7 +31,7 @@ maintainer = "Vianpyro"
 copyright = "2026 Vianpyro"
 section = "utility"
 priority = "optional"
-depends = "libgtk-3-0, libxdo3, libappindicator3-1, libssl3"
+depends = "$auto"
 assets = [
     ["target/release/sunrise-brightness", "/usr/bin/", "755"],
 ]
