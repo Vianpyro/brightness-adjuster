@@ -90,7 +90,8 @@ jobs:
             libappindicator3-dev \
             libxdo-dev \
             libssl-dev \
-            libwayland-dev
+            libwayland-dev \
+            dpkg-dev
 
       - name: Build
         run: cargo build --release --verbose
