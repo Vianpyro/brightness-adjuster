@@ -1,0 +1,49 @@
+name: Dependabot Auto-Release
+
+on:
+  pull_request:
+    types: ["closed"]
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-release:
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version in Cargo.toml
+        id: bump
+        run: |
+          OLD=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          MAJOR=$(echo $OLD | cut -d. -f1)
+          MINOR=$(echo $OLD | cut -d. -f2)
+          PATCH=$(echo $OLD | cut -d. -f3)
+          NEW="$MAJOR.$MINOR.$((PATCH + 1))"
+          sed -i "0,/^version = \"$OLD\"/s//version = \"$NEW\"/" Cargo.toml
+          echo "old=$OLD" >> $GITHUB_OUTPUT
+          echo "new=$NEW" >> $GITHUB_OUTPUT
+
+      - name: Update Cargo.lock
+        run: cargo update --workspace
+
+      - name: Commit and push
+        run: |
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore: bump version ${{ steps.bump.outputs.old }} to ${{ steps.bump.outputs.new }} (dependabot)"
+          git push
