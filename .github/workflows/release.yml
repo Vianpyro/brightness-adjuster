@@ -1,0 +1,186 @@
+name: Rust
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust components
+        run: rustup component add rustfmt clippy
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: Linux-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: GTK dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            libgtk-3-dev \
+            libappindicator3-dev \
+            libxdo-dev \
+            libssl-dev \
+            libwayland-dev
+
+      - name: Run fmt check
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --all-features --release --verbose
+
+  build:
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: GTK deps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            pkg-config \
+            libgtk-3-dev \
+            libappindicator3-dev \
+            libxdo-dev \
+            libssl-dev \
+            libwayland-dev \
+            dpkg-dev
+
+      - name: Build
+        run: cargo build --release --verbose
+
+      - name: Get package info
+        id: pkg
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          NAME=$(grep '^name' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Rename binary
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv target/release/${{ steps.pkg.outputs.name }}.exe \
+               target/release/${{ steps.pkg.outputs.name }}-windows.exe
+          else
+            mv target/release/${{ steps.pkg.outputs.name }} \
+               target/release/${{ steps.pkg.outputs.name }}-linux
+          fi
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: target/release/${{ steps.pkg.outputs.name }}-*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: bin-${{ runner.os }}
+          path: target/release/${{ steps.pkg.outputs.name }}-*
+
+      - name: Build .deb package
+        if: runner.os == 'Linux'
+        run: |
+          cargo install cargo-deb --locked 2>/dev/null || true
+          cp target/release/${{ steps.pkg.outputs.name }}-linux \
+             target/release/${{ steps.pkg.outputs.name }}
+          cargo deb --no-build
+
+      - name: Upload .deb
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: deb-package
+          path: target/debian/*.deb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Get version
+        id: pkg
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          NAME=$(grep '^name' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if release exists
+        id: check
+        run: |
+          if gh release view v${{ steps.pkg.outputs.version }} >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifacts
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Create release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.pkg.outputs.version }}
+          name: Version ${{ steps.pkg.outputs.version }}
+          files: artifacts/**/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
