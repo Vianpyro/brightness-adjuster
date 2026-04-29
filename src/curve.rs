@@ -13,6 +13,8 @@ pub struct BrightnessCurve {
     pub points: Vec<ControlPoint>,
     #[serde(default)]
     pub preset: Option<String>,
+    #[serde(skip)]
+    tangents: Vec<f64>,
 }
 
 impl Default for BrightnessCurve {
@@ -23,7 +25,7 @@ impl Default for BrightnessCurve {
 
 impl BrightnessCurve {
     pub fn natural() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -55,11 +57,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("natural".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn linear() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.0,
@@ -75,11 +80,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("linear".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn night_owl() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -103,11 +111,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("night_owl".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn relax() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -139,11 +150,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("relax".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn cinema() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -175,11 +189,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("cinema".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn paper() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -215,11 +232,14 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("paper".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn early_bird() -> Self {
-        Self {
+        let mut c = Self {
             points: vec![
                 ControlPoint {
                     position: 0.00,
@@ -255,7 +275,10 @@ impl BrightnessCurve {
                 },
             ],
             preset: Some("early_bird".into()),
-        }
+            tangents: Vec::new(),
+        };
+        c.recompute_tangents();
+        c
     }
 
     pub fn from_preset(name: &str) -> Self {
@@ -272,12 +295,57 @@ impl BrightnessCurve {
 }
 
 impl BrightnessCurve {
+    pub fn recompute_tangents(&mut self) {
+        let pts = &self.points;
+        let n = pts.len();
+        if n < 2 {
+            self.tangents = vec![0.0; n];
+            return;
+        }
+        let mut delta = vec![0.0_f64; n - 1];
+        for i in 0..n - 1 {
+            let dx = pts[i + 1].position - pts[i].position;
+            delta[i] = if dx.abs() < 1e-12 {
+                0.0
+            } else {
+                (pts[i + 1].brightness - pts[i].brightness) / dx
+            };
+        }
+        let mut m = vec![0.0_f64; n];
+        m[0] = delta[0];
+        m[n - 1] = delta[n - 2];
+        for i in 1..n - 1 {
+            m[i] = if delta[i - 1].signum() != delta[i].signum() {
+                0.0
+            } else {
+                (delta[i - 1] + delta[i]) / 2.0
+            };
+        }
+        for i in 0..n - 1 {
+            if delta[i].abs() < 1e-12 {
+                m[i] = 0.0;
+                m[i + 1] = 0.0;
+            } else {
+                let alpha = m[i] / delta[i];
+                let beta = m[i + 1] / delta[i];
+                let tau = alpha * alpha + beta * beta;
+                if tau > 9.0 {
+                    let s = 3.0 / tau.sqrt();
+                    m[i] = s * alpha * delta[i];
+                    m[i + 1] = s * beta * delta[i];
+                }
+            }
+        }
+        self.tangents = m;
+    }
+
     pub fn sort(&mut self) {
         self.points.sort_by(|a, b| {
             a.position
                 .partial_cmp(&b.position)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
+        self.recompute_tangents();
     }
 
     pub fn add_point(&mut self, position: f64, brightness: f64) -> bool {
@@ -299,6 +367,7 @@ impl BrightnessCurve {
         }
         self.points.remove(index);
         self.preset = None;
+        self.recompute_tangents();
         true
     }
 }
@@ -331,42 +400,11 @@ impl BrightnessCurve {
             }
         }
 
-        let mut delta = vec![0.0_f64; n - 1];
-        for i in 0..n - 1 {
-            let dx = pts[i + 1].position - pts[i].position;
-            delta[i] = if dx.abs() < 1e-12 {
-                0.0
-            } else {
-                (pts[i + 1].brightness - pts[i].brightness) / dx
-            };
-        }
-
-        let mut m = vec![0.0_f64; n];
-        m[0] = delta[0];
-        m[n - 1] = delta[n - 2];
-        for i in 1..n - 1 {
-            if delta[i - 1].signum() != delta[i].signum() {
-                m[i] = 0.0;
-            } else {
-                m[i] = (delta[i - 1] + delta[i]) / 2.0;
-            }
-        }
-
-        for i in 0..n - 1 {
-            if delta[i].abs() < 1e-12 {
-                m[i] = 0.0;
-                m[i + 1] = 0.0;
-            } else {
-                let alpha = m[i] / delta[i];
-                let beta = m[i + 1] / delta[i];
-                let tau = alpha * alpha + beta * beta;
-                if tau > 9.0 {
-                    let s = 3.0 / tau.sqrt();
-                    m[i] = s * alpha * delta[i];
-                    m[i + 1] = s * beta * delta[i];
-                }
-            }
-        }
+        let m_slice: &[f64] = if self.tangents.len() == n {
+            &self.tangents
+        } else {
+            return self.evaluate_cold(x);
+        };
 
         let h = pts[k + 1].position - pts[k].position;
         if h.abs() < 1e-12 {
@@ -381,12 +419,17 @@ impl BrightnessCurve {
         let h01 = -2.0 * t3 + 3.0 * t2;
         let h11 = t3 - t2;
 
-        let result = h00 * pts[k].brightness
-            + h10 * h * m[k]
+        (h00 * pts[k].brightness
+            + h10 * h * m_slice[k]
             + h01 * pts[k + 1].brightness
-            + h11 * h * m[k + 1];
+            + h11 * h * m_slice[k + 1])
+            .clamp(0.0, 100.0)
+    }
 
-        result.clamp(0.0, 100.0)
+    fn evaluate_cold(&self, x: f64) -> f64 {
+        let mut tmp = self.clone();
+        tmp.recompute_tangents();
+        tmp.evaluate(x)
     }
 }
 
@@ -570,5 +613,37 @@ mod tests {
         assert!(!curve.remove_point(0));
         assert!(curve.remove_point(1));
         assert_eq!(curve.points.len(), 3);
+    }
+
+    #[test]
+    fn cache_survives_mutation() {
+        let mut curve = BrightnessCurve::natural();
+        let before = curve.evaluate(0.5);
+        curve.add_point(0.5, 50.0);
+        curve.remove_point(curve.points.len() / 2);
+        let after = curve.evaluate(0.5);
+        assert!((0.0..=100.0).contains(&after));
+        let _ = before;
+    }
+
+    #[test]
+    fn cold_evaluate_matches_warm() {
+        let warm = BrightnessCurve::natural();
+        let cold = BrightnessCurve {
+            points: warm.points.clone(),
+            preset: warm.preset.clone(),
+            tangents: Vec::new(),
+        };
+
+        for i in 0..=20 {
+            let x = i as f64 / 20.0;
+            let diff = (warm.evaluate(x) - cold.evaluate(x)).abs();
+            assert!(
+                diff < 1e-10,
+                "mismatch at x={x}: warm={}, cold={}",
+                warm.evaluate(x),
+                cold.evaluate(x)
+            );
+        }
     }
 }

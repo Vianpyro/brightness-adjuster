@@ -393,6 +393,7 @@ impl SettingsApp {
             c.points[idx].position = position;
             c.points[idx].brightness = brightness;
             c.preset = None;
+            c.recompute_tangents();
         }
 
         if response.drag_stopped() && self.dragging_point.is_some() {
