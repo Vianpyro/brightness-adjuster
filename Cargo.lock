@@ -2154,7 +2154,7 @@ dependencies = [
  "byteorder-lite",
  "moxcms",
  "num-traits",
- "png 0.18.1",
+ "png",
  "tiff",
 ]
 
@@ -2543,9 +2543,9 @@ dependencies = [
 
 [[package]]
 name = "muda"
-version = "0.17.2"
+version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c9fec5a4e89860383d778d10563a605838f8f0b2f9303868937e5ff32e86177"
+checksum = "0ae8844f63b5b118e334e205585b8c5c17b984121dbdb179d44aeb087ffad3cb"
 dependencies = [
  "crossbeam-channel",
  "dpi",
@@ -2557,9 +2557,9 @@ dependencies = [
  "objc2-core-foundation",
  "objc2-foundation 0.3.2",
  "once_cell",
- "png 0.17.16",
+ "png",
  "thiserror 2.0.18",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3309,19 +3309,6 @@ name = "plain"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
-
-[[package]]
-name = "png"
-version = "0.17.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
-dependencies = [
- "bitflags 1.3.2",
- "crc32fast",
- "fdeflate",
- "flate2",
- "miniz_oxide",
-]
 
 [[package]]
 name = "png"
@@ -4193,9 +4180,9 @@ dependencies = [
 
 [[package]]
 name = "solar-positioning"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7ba5e0cd34d8151ab38c6d11b2b086ecc58dda9d70aea38f3fbf843248e5dd7"
+checksum = "43be6efda1aa40c21271a0349b351b09c15294c3d9c5a5facca4da97c373633c"
 dependencies = [
  "chrono",
 ]
@@ -4670,9 +4657,9 @@ dependencies = [
 
 [[package]]
 name = "tray-icon"
-version = "0.22.1"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f9eb1da86bd0ab8931fad00650d2ba7473260c5bab06d6f24d04339edb88faa"
+checksum = "15edbb0d80583e85ee8df283410038e17314df5cba30da2087a54a85216c0773"
 dependencies = [
  "crossbeam-channel",
  "dirs",
@@ -4684,9 +4671,9 @@ dependencies = [
  "objc2-core-graphics",
  "objc2-foundation 0.3.2",
  "once_cell",
- "png 0.18.1",
+ "png",
  "thiserror 2.0.18",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
