@@ -18,14 +18,7 @@ use tray_icon::{
 
 fn main() -> Result<()> {
     #[cfg(target_os = "linux")]
-    {
-        if std::env::var("GDK_BACKEND").is_err() {
-            unsafe {
-                std::env::set_var("GDK_BACKEND", "x11");
-            }
-        }
-        gtk::init().expect("Failed to initialize GTK");
-    }
+    gtk::init().expect("Failed to initialize GTK");
 
     let cfg = config::load_config();
     let state = Arc::new(config::SharedState::new(cfg));
