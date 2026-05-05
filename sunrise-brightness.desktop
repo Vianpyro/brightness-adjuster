@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Sunrise Brightness
+Comment=Adjusts screen brightness based on sunrise/sunset
+Exec=sunrise-brightness
+Icon=sunrise-brightness
+Terminal=false
+Type=Application
+Categories=Utility;System;
+Keywords=brightness;display;screen;sunset;sunrise;
+StartupNotify=false

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD83D"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </radialGradient>
+  </defs>
+  <!-- Rays -->
+  <g stroke="#FFA500" stroke-width="10" stroke-linecap="round">
+    <line x1="128" y1="20" x2="128" y2="50"/>
+    <line x1="128" y1="206" x2="128" y2="236"/>
+    <line x1="20" y1="128" x2="50" y2="128"/>
+    <line x1="206" y1="128" x2="236" y2="128"/>
+    <line x1="51" y1="51" x2="72" y2="72"/>
+    <line x1="184" y1="184" x2="205" y2="205"/>
+    <line x1="205" y1="51" x2="184" y2="72"/>
+    <line x1="72" y1="184" x2="51" y2="205"/>
+  </g>
+  <!-- Sun disc -->
+  <circle cx="128" cy="128" r="60" fill="url(#g)"/>
+</svg>
