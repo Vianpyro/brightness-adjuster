@@ -32,7 +32,7 @@ impl Default for Config {
             start_on_startup: true,
             global_curve: BrightnessCurve::default(),
             monitors: Vec::new(),
-            weather_adaptive: true,
+            weather_adaptive: false,
             cloud_attenuation: 0.5,
         }
     }
