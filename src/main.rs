@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([480.0, 640.0])
-            .with_decorations(false)
+            .with_decorations(cfg!(target_os = "linux"))
             .with_resizable(false)
             .with_maximized(false),
         ..Default::default()
