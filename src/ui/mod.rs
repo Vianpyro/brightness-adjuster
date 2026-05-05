@@ -39,7 +39,7 @@ impl SettingsApp {
             state,
             settings_menu_id,
             quit_menu_id,
-            visible: false,
+            visible: cfg!(target_os = "linux"),
             first_frame: true,
             lat_input: config
                 .latitude
@@ -139,6 +139,9 @@ impl eframe::App for SettingsApp {
 
         if self.first_frame {
             self.first_frame = false;
+            // On Windows, hide to tray on startup. On Linux, the tray
+            // may not work (GNOME/Wayland), so show the window directly.
+            #[cfg(not(target_os = "linux"))]
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
         }
 
@@ -278,8 +281,13 @@ impl eframe::App for SettingsApp {
         });
 
         if should_close {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-            self.visible = false;
+            #[cfg(target_os = "linux")]
+            std::process::exit(0);
+            #[cfg(not(target_os = "linux"))]
+            {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+                self.visible = false;
+            }
         }
     }
 }
