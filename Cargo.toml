@@ -1,12 +1,12 @@
 [package]
 name = "sunrise-brightness"
-version = "3.5.2"
+version = "3.6.0"
 edition = "2024"
 description = "Adjusts screen brightness based on sunrise/sunset - with system tray, curve editor, weather adaptation, and per-monitor support"
 license = "MIT"
 
 [dependencies]
-eframe = { version = "0.34.1", default-features = true }
+eframe = { version = "0.34.2", default-features = true }
 tray-icon = "0.23.1"
 brightness = { version = "0.8", features = ["blocking"] }
 solar-positioning = { version = "0.5.2", features = ["chrono"] }
@@ -18,6 +18,7 @@ chrono = "0.4"
 directories = "6"
 auto-launch = "0.6.0"
 anyhow = "1"
+gtk = "0.18.2"
 
 [profile.release]
 opt-level = "z"

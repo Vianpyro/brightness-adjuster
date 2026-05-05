@@ -17,6 +17,9 @@ use tray_icon::{
 };
 
 fn main() -> Result<()> {
+    #[cfg(target_os = "linux")]
+    gtk::init().expect("Failed to initialize GTK");
+
     let cfg = config::load_config();
     let state = Arc::new(config::SharedState::new(cfg));
 
