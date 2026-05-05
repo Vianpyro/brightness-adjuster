@@ -1,6 +1,6 @@
 [package]
 name = "sunrise-brightness"
-version = "3.7.0"
+version = "3.7.1"
 edition = "2024"
 description = "Adjusts screen brightness based on sunrise/sunset - with system tray, curve editor, weather adaptation, and per-monitor support"
 license = "MIT"
@@ -35,6 +35,4 @@ copyright = "2026 Vianpyro"
 section = "utility"
 priority = "optional"
 depends = "$auto"
-assets = [
-    ["target/release/sunrise-brightness", "/usr/bin/", "755"],
-]
+assets = [["target/release/sunrise-brightness", "/usr/bin/", "755"]]
