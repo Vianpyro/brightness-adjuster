@@ -21,15 +21,15 @@ fn main() -> Result<()> {
     gtk::init().expect("Failed to initialize GTK");
 
     let cfg = config::load_config();
-+{
-+    // tray-icon requires X11 backend (XEmbed protocol for system tray).
-+    // Under Wayland, GDK defaults to the Wayland backend which lacks
-+    // screen/tray support, causing gtk_icon_theme_get_for_screen to fail.
-+    if std::env::var("GDK_BACKEND").is_err() {
-+        std::env::set_var("GDK_BACKEND", "x11");
-+    }
-+    gtk::init().expect("Failed to initialize GTK");
-+}
+    {
+        // tray-icon requires X11 backend (XEmbed protocol for system tray).
+        // Under Wayland, GDK defaults to the Wayland backend which lacks
+        // screen/tray support, causing gtk_icon_theme_get_for_screen to fail.
+        if std::env::var("GDK_BACKEND").is_err() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
+        gtk::init().expect("Failed to initialize GTK");
+    }
 
     let state_bg = Arc::clone(&state);
     std::thread::spawn(move || brightness::run_loop(state_bg));
