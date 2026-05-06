@@ -157,9 +157,14 @@ impl eframe::App for SettingsApp {
         }
 
         if ctx.input(|i| i.viewport().close_requested()) {
-            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-            self.visible = false;
+            #[cfg(target_os = "linux")]
+            std::process::exit(0);
+            #[cfg(not(target_os = "linux"))]
+            {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+                self.visible = false;
+            }
         }
 
         ctx.request_repaint_after(Duration::from_millis(250));
