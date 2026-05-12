@@ -4,6 +4,7 @@ on:
   pull_request_target:
     types: ["closed"]
     branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,8 +14,9 @@ permissions:
 jobs:
   bump:
     if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.user.login == 'dependabot[bot]'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.user.login == 'dependabot[bot]')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.bump.outputs.version }}
@@ -137,4 +139,4 @@ jobs:
           files: artifacts/**/*
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
